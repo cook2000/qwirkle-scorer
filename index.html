@@ -177,22 +177,33 @@
 
     .players-grid {
       display: flex;
-      flex-direction: column;
+      flex-direction: row;
       gap: 10px;
-      margin-bottom: 20px;
+      margin-bottom: 16px;
+      overflow-x: auto;
+      padding-bottom: 6px;
+      /* Scrollbar verstecken aber scrollbar lassen */
+      scrollbar-width: none;
+      -ms-overflow-style: none;
     }
+    .players-grid::-webkit-scrollbar { display: none; }
+
     .player-card {
       background: var(--card);
       border: 2px solid var(--border);
       border-radius: var(--radius);
-      padding: 14px 16px;
+      padding: 12px 14px;
       display: flex;
+      flex-direction: column;
       align-items: center;
-      gap: 14px;
+      gap: 6px;
       transition: border-color 0.2s, box-shadow 0.2s;
       cursor: pointer;
       position: relative;
-      overflow: hidden;
+      flex-shrink: 0;
+      min-width: 80px;
+      max-width: 100px;
+      text-align: center;
     }
     .player-card.active {
       border-color: var(--accent);
@@ -201,34 +212,35 @@
     .player-card.leader::after {
       content: '👑';
       position: absolute;
-      top: 10px;
-      right: 12px;
-      font-size: 0.9rem;
+      top: 5px;
+      right: 7px;
+      font-size: 0.7rem;
     }
     .player-dot {
-      width: 18px; height: 18px;
+      width: 22px; height: 22px;
       border-radius: 50%;
       flex-shrink: 0;
     }
-    .player-info { flex: 1; }
+    .player-info { flex: 1; width: 100%; }
     .player-name-game {
       font-weight: 700;
-      font-size: 0.95rem;
+      font-size: 0.75rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 72px;
     }
     .player-score {
       font-family: var(--font-mono);
-      font-size: 1.6rem;
+      font-size: 1.3rem;
       font-weight: 500;
       color: var(--accent);
-      min-width: 60px;
-      text-align: right;
     }
     .player-delta {
       font-family: var(--font-mono);
-      font-size: 0.75rem;
+      font-size: 0.65rem;
       color: var(--green);
-      margin-top: 2px;
-      min-height: 14px;
+      min-height: 12px;
     }
 
     /* ─── SCORE INPUT PANEL ─── */
@@ -554,11 +566,9 @@
         @click="selectPlayer(i)"
       >
         <div class="player-dot" :style="{ background: player.color }"></div>
-        <div class="player-info">
-          <div class="player-name-game">{{ player.name }}</div>
-          <div class="player-delta" v-if="player.lastDelta">+{{ player.lastDelta }} in Runde {{ round - 1 }}</div>
-        </div>
+        <div class="player-name-game">{{ player.name }}</div>
         <div class="player-score">{{ player.score }}</div>
+        <div class="player-delta" v-if="player.lastDelta">+{{ player.lastDelta }}</div>
       </div>
     </div>
 
