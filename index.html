@@ -486,6 +486,10 @@
     }
     .hfi-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
     .hfi-pts { font-family: var(--font-mono); color: var(--green); margin-left: auto; }
+    .hfi-edit { font-size: 0.75rem; margin-left: 8px; opacity: 0.4; }
+    .hfi-entry { cursor: pointer; border-radius: 6px; padding: 3px 4px; transition: background 0.12s; }
+    .hfi-entry:hover { background: var(--border); }
+    .hfi-entry:hover .hfi-edit { opacity: 1; }
 
     .empty-state {
       text-align: center;
@@ -570,8 +574,8 @@
         </button>
       </div>
       <div class="quick-btns">
-        <button class="quick-btn" v-for="v in quickValues" :key="v" @click="scoreInput = v">+{{ v }}</button>
-        <button class="quick-btn qwirkle" @click="scoreInput = 12">🌟 Qwirkle (+12)</button>
+        <button class="quick-btn" v-for="v in quickValues" :key="v" @click="scoreInput = (scoreInput || 0) + v">+{{ v }}</button>
+        <button class="quick-btn qwirkle" @click="scoreInput = (scoreInput || 0) + 12">🌟 Qwirkle (+12)</button>
       </div>
     </div>
 
@@ -609,10 +613,11 @@
           <span class="hfi-round">Runde {{ group.round }}</span>
         </div>
         <div class="hfi-entries">
-          <div class="hfi-entry" v-for="e in group.entries" :key="e.playerId">
+          <div class="hfi-entry" v-for="e in group.entries" :key="e.id" @click="startEditEntry(e)">
             <div class="hfi-dot" :style="{ background: e.color }"></div>
             <span>{{ e.name }}</span>
             <span class="hfi-pts">+{{ e.points }}</span>
+            <span class="hfi-edit">✏️</span>
           </div>
         </div>
       </div>
@@ -659,6 +664,38 @@
       </div>
     </div>
   </div>
+
+  <!-- EDIT ENTRY MODAL -->
+  <div class="modal-backdrop" v-if="editEntry" @click.self="editEntry = null">
+    <div class="modal">
+      <div class="modal-title">Eintrag bearbeiten</div>
+      <div class="modal-sub" style="display:flex;align-items:center;gap:8px;">
+        <div class="player-dot" :style="{ background: editEntry.color }"></div>
+        {{ editEntry.name }} – Runde {{ editEntry.round }}
+      </div>
+      <div class="score-input-row" style="margin-bottom:16px;">
+        <input
+          class="score-input"
+          type="number"
+          min="0"
+          v-model.number="editEntry.newPoints"
+          style="font-size:1.4rem;"
+        />
+      </div>
+      <div class="quick-btns" style="margin-bottom:16px;">
+        <button class="quick-btn" v-for="v in quickValues" :key="v" @click="editEntry.newPoints = (editEntry.newPoints || 0) + v">+{{ v }}</button>
+        <button class="quick-btn qwirkle" @click="editEntry.newPoints = (editEntry.newPoints || 0) + 12">🌟 +12</button>
+      </div>
+      <div class="modal-btns">
+        <button class="modal-cancel" @click="editEntry = null">Abbrechen</button>
+        <button class="modal-confirm" style="background:var(--green);" @click="saveEditEntry">Speichern</button>
+      </div>
+      <button
+        @click="deleteEntry"
+        style="width:100%;margin-top:10px;padding:12px;background:none;border:1px solid var(--accent2);border-radius:var(--radius);color:var(--accent2);font-family:var(--font-head);font-size:0.9rem;cursor:pointer;"
+      >🗑 Eintrag löschen</button>
+    </div>
+  </div>
 </div>
 
 <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
@@ -681,12 +718,14 @@ createApp({
       { id: 2, name: '', score: 0, color: COLORS[1], lastDelta: 0 },
     ]);
     const round = ref(1);
-    const history = ref([]);        // { playerId, name, color, points, round }
+    const history = ref([]);        // { id, playerId, name, color, points, round }
     const selectedPlayer = ref(null);
-    const scoreInput = ref('');
+    const scoreInput = ref(0);
     const showEndConfirm = ref(false);
+    const editEntry = ref(null);
     const scoreField = ref(null);
     let nextId = 3;
+    let nextHistoryId = 1;
 
     const quickValues = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
@@ -698,6 +737,7 @@ createApp({
         round: round.value,
         history: history.value,
         nextId,
+        nextHistoryId,
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     }
@@ -713,6 +753,7 @@ createApp({
           round.value = s.round || 1;
           history.value = s.history || [];
           nextId = s.nextId || players.value.length + 1;
+          nextHistoryId = s.nextHistoryId || history.value.length + 1;
         }
       } catch(e) { /* ignore */ }
     }
@@ -748,14 +789,14 @@ createApp({
       round.value = 1;
       history.value = [];
       selectedPlayer.value = null;
-      scoreInput.value = '';
+      scoreInput.value = 0;
       view.value = 'game';
     }
 
     // ── Game ──
     function selectPlayer(i) {
       selectedPlayer.value = i;
-      scoreInput.value = '';
+      scoreInput.value = 0;
       nextTick(() => scoreField.value?.focus());
     }
 
@@ -766,21 +807,25 @@ createApp({
       p.score += pts;
       p.lastDelta = pts;
       history.value.unshift({
+        id: nextHistoryId++,
         playerId: p.id,
         name: p.name,
         color: p.color,
         points: pts,
         round: round.value,
       });
-      scoreInput.value = '';
-      // advance round when all players had a turn in this round
+      // Runde hochzählen wenn alle Spieler dran waren
       const playsThisRound = history.value.filter(h => h.round === round.value);
       const uniquePlayers = new Set(playsThisRound.map(h => h.playerId));
       if (uniquePlayers.size >= players.value.length) {
         round.value++;
         players.value.forEach(pl => { pl.lastDelta = 0; });
       }
-      selectedPlayer.value = null;
+      // Automatisch zum nächsten Spieler wechseln
+      const nextIndex = (selectedPlayer.value + 1) % players.value.length;
+      selectedPlayer.value = nextIndex;
+      scoreInput.value = 0;
+      nextTick(() => scoreField.value?.focus());
     }
 
     function undoLast() {
@@ -806,8 +851,36 @@ createApp({
       round.value = 1;
       history.value = [];
       selectedPlayer.value = null;
-      scoreInput.value = '';
+      scoreInput.value = 0;
       view.value = 'setup';
+    }
+
+    // ── History bearbeiten ──
+    function startEditEntry(entry) {
+      editEntry.value = { ...entry, newPoints: entry.points };
+    }
+
+    function saveEditEntry() {
+      const e = editEntry.value;
+      if (!e || e.newPoints <= 0) return;
+      const idx = history.value.findIndex(h => h.id === e.id);
+      if (idx === -1) return;
+      const diff = e.newPoints - e.points;
+      history.value[idx].points = e.newPoints;
+      const p = players.value.find(p => p.id === e.playerId);
+      if (p) p.score += diff;
+      editEntry.value = null;
+    }
+
+    function deleteEntry() {
+      const e = editEntry.value;
+      if (!e) return;
+      const idx = history.value.findIndex(h => h.id === e.id);
+      if (idx === -1) return;
+      history.value.splice(idx, 1);
+      const p = players.value.find(p => p.id === e.playerId);
+      if (p) p.score -= e.points;
+      editEntry.value = null;
     }
 
     // ── History view ──
@@ -840,12 +913,13 @@ createApp({
 
     return {
       view, players, round, history, selectedPlayer,
-      scoreInput, showEndConfirm, scoreField,
+      scoreInput, showEndConfirm, editEntry, scoreField,
       quickValues, canStart,
       addPlayer, removePlayer, startGame,
       selectPlayer, addScore, undoLast, endGame, newGame,
       toggleHistory, recentHistory, groupedHistory,
       sortedPlayers, winner, isLeader,
+      startEditEntry, saveEditEntry, deleteEntry,
     };
   }
 }).mount('#app');
