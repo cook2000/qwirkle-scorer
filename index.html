@@ -272,27 +272,32 @@
     .score-input:focus { border-color: var(--accent); }
 
     .quick-btns {
-      display: flex;
-      flex-wrap: wrap;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
       gap: 8px;
       margin-top: 12px;
     }
     .quick-btn {
       background: var(--card);
       border: 1px solid var(--border);
-      border-radius: 8px;
+      border-radius: 12px;
       color: var(--text);
       font-family: var(--font-mono);
-      font-size: 0.85rem;
-      padding: 8px 12px;
+      font-size: 1.15rem;
+      font-weight: 500;
+      padding: 18px 8px;
       cursor: pointer;
       transition: background 0.12s, transform 0.1s;
+      text-align: center;
     }
-    .quick-btn:active { transform: scale(0.92); }
+    .quick-btn:active { transform: scale(0.92); background: var(--border); }
     .quick-btn:hover { background: var(--border); }
     .quick-btn.qwirkle {
+      grid-column: 1 / -1;
       border-color: var(--accent);
       color: var(--accent);
+      padding: 16px 8px;
+      font-size: 1rem;
     }
 
     .confirm-btn {
@@ -685,8 +690,7 @@
       <div class="quick-btns" style="margin-bottom:16px;">
         <button class="quick-btn" v-for="v in quickValues" :key="v" @click="editEntry.newPoints = (editEntry.newPoints || 0) + v">+{{ v }}</button>
         <button class="quick-btn qwirkle" @click="editEntry.newPoints = (editEntry.newPoints || 0) + 12">🌟 +12</button>
-      </div>
-      <div class="modal-btns">
+      </div>      <div class="modal-btns">
         <button class="modal-cancel" @click="editEntry = null">Abbrechen</button>
         <button class="modal-confirm" style="background:var(--green);" @click="saveEditEntry">Speichern</button>
       </div>
