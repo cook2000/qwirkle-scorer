@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#1a1a2e" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Qwirkle Scorer</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:        #0f0f1a;
+      --surface:   #1a1a2e;
+      --card:      #22223b;
+      --accent:    #f7b731;
+      --accent2:   #ee5a24;
+      --green:     #00b894;
+      --text:      #f0eee8;
+      --muted:     #888;
+      --border:    #333355;
+      --radius:    14px;
+      --font-head: 'Syne', sans-serif;
+      --font-mono: 'DM Mono', monospace;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-head);
+      -webkit-tap-highlight-color: transparent;
+      overscroll-behavior: none;
+    }
+
+    #app {
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ─── HEADER ─── */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 20px 14px;
+      background: var(--surface);
+      border-bottom: 2px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .logo {
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+    .logo span { color: var(--accent); }
+    .header-btns { display: flex; gap: 8px; }
+    .icon-btn {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 8px 12px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+    }
+    .icon-btn:active { transform: scale(0.93); }
+    .icon-btn:hover { background: var(--border); }
+
+    /* ─── VIEWS ─── */
+    .view { flex: 1; padding: 20px; animation: fadeIn 0.2s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+    /* ─── SETUP VIEW ─── */
+    .setup-title {
+      font-size: 2rem;
+      font-weight: 800;
+      margin-bottom: 6px;
+    }
+    .setup-sub { color: var(--muted); margin-bottom: 28px; font-size: 0.9rem; }
+
+    .player-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+    .player-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 14px;
+      animation: slideIn 0.2s ease;
+    }
+    @keyframes slideIn { from { opacity: 0; transform: translateX(-12px); } to { opacity: 1; transform: none; } }
+    .player-color {
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .player-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text);
+      font-family: var(--font-head);
+      font-size: 1rem;
+      font-weight: 700;
+    }
+    .player-input::placeholder { color: var(--muted); }
+    .remove-btn {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 1.2rem;
+      cursor: pointer;
+      padding: 4px;
+      transition: color 0.15s;
+    }
+    .remove-btn:hover { color: var(--accent2); }
+
+    .add-player-btn {
+      width: 100%;
+      padding: 14px;
+      border: 2px dashed var(--border);
+      background: transparent;
+      border-radius: var(--radius);
+      color: var(--muted);
+      font-family: var(--font-head);
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .add-player-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    .start-btn {
+      width: 100%;
+      margin-top: 24px;
+      padding: 18px;
+      background: var(--accent);
+      color: #1a1a2e;
+      border: none;
+      border-radius: var(--radius);
+      font-family: var(--font-head);
+      font-size: 1.15rem;
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform 0.1s, box-shadow 0.15s;
+      letter-spacing: 0.5px;
+    }
+    .start-btn:hover { box-shadow: 0 0 0 4px rgba(247,183,49,0.25); }
+    .start-btn:active { transform: scale(0.97); }
+    .start-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    /* ─── GAME VIEW ─── */
+    .round-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 99px;
+      padding: 6px 14px;
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-bottom: 16px;
+      font-family: var(--font-mono);
+    }
+    .round-badge b { color: var(--accent); font-size: 1rem; }
+
+    .players-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .player-card {
+      background: var(--card);
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+    .player-card.active {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(247,183,49,0.15);
+    }
+    .player-card.leader::after {
+      content: '👑';
+      position: absolute;
+      top: 10px;
+      right: 12px;
+      font-size: 0.9rem;
+    }
+    .player-dot {
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .player-info { flex: 1; }
+    .player-name-game {
+      font-weight: 700;
+      font-size: 0.95rem;
+    }
+    .player-score {
+      font-family: var(--font-mono);
+      font-size: 1.6rem;
+      font-weight: 500;
+      color: var(--accent);
+      min-width: 60px;
+      text-align: right;
+    }
+    .player-delta {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--green);
+      margin-top: 2px;
+      min-height: 14px;
+    }
+
+    /* ─── SCORE INPUT PANEL ─── */
+    .score-panel {
+      background: var(--surface);
+      border: 2px solid var(--accent);
+      border-radius: var(--radius);
+      padding: 18px;
+      margin-bottom: 16px;
+      animation: popIn 0.18s cubic-bezier(.34,1.56,.64,1);
+    }
+    @keyframes popIn { from { opacity:0; transform: scale(0.94); } to { opacity:1; transform: none; } }
+    .panel-title {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-bottom: 12px;
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .panel-title b { color: var(--accent); }
+
+    .score-input-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .score-input {
+      flex: 1;
+      background: var(--bg);
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 1.4rem;
+      padding: 12px 16px;
+      outline: none;
+      transition: border-color 0.15s;
+      text-align: center;
+    }
+    .score-input:focus { border-color: var(--accent); }
+
+    .quick-btns {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .quick-btn {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      padding: 8px 12px;
+      cursor: pointer;
+      transition: background 0.12s, transform 0.1s;
+    }
+    .quick-btn:active { transform: scale(0.92); }
+    .quick-btn:hover { background: var(--border); }
+    .quick-btn.qwirkle {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .confirm-btn {
+      background: var(--green);
+      border: none;
+      border-radius: 10px;
+      color: #0f0f1a;
+      font-family: var(--font-head);
+      font-size: 1rem;
+      font-weight: 800;
+      padding: 12px 18px;
+      cursor: pointer;
+      transition: transform 0.1s;
+      white-space: nowrap;
+    }
+    .confirm-btn:active { transform: scale(0.93); }
+    .confirm-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+    /* ─── BOTTOM BUTTONS ─── */
+    .bottom-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 8px;
+    }
+    .undo-btn {
+      flex: 1;
+      padding: 14px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: var(--font-head);
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+    }
+    .undo-btn:hover { background: var(--border); }
+    .undo-btn:active { transform: scale(0.96); }
+    .undo-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+    .end-btn {
+      flex: 1;
+      padding: 14px;
+      background: var(--accent2);
+      border: none;
+      border-radius: var(--radius);
+      color: #fff;
+      font-family: var(--font-head);
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.1s;
+    }
+    .end-btn:active { transform: scale(0.96); }
+
+    /* ─── HISTORY ─── */
+    .history-section { margin-top: 24px; }
+    .history-title {
+      font-size: 0.75rem;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 10px;
+    }
+    .history-list { display: flex; flex-direction: column; gap: 6px; }
+    .history-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--card);
+      border-radius: 8px;
+      padding: 9px 13px;
+      font-size: 0.85rem;
+      font-family: var(--font-mono);
+      border-left: 3px solid transparent;
+    }
+    .history-item-score {
+      color: var(--green);
+      font-weight: 500;
+    }
+    .history-item-round { color: var(--muted); font-size: 0.75rem; }
+
+    /* ─── RESULT VIEW ─── */
+    .result-view { text-align: center; padding: 30px 20px; }
+    .trophy { font-size: 5rem; margin-bottom: 12px; animation: bounce 0.6s ease; }
+    @keyframes bounce {
+      0%,100% { transform: translateY(0); }
+      40% { transform: translateY(-20px); }
+      70% { transform: translateY(-8px); }
+    }
+    .winner-name {
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--accent);
+      margin-bottom: 4px;
+    }
+    .winner-sub { color: var(--muted); margin-bottom: 30px; }
+
+    .final-scores {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 30px;
+    }
+    .final-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      border: 1px solid var(--border);
+    }
+    .final-row.first { border-color: var(--accent); }
+    .final-left { display: flex; align-items: center; gap: 10px; font-weight: 700; }
+    .final-rank { font-family: var(--font-mono); color: var(--muted); font-size: 0.85rem; width: 24px; }
+    .final-score { font-family: var(--font-mono); font-size: 1.3rem; color: var(--accent); }
+
+    .new-game-btn {
+      width: 100%;
+      padding: 18px;
+      background: var(--accent);
+      color: #1a1a2e;
+      border: none;
+      border-radius: var(--radius);
+      font-family: var(--font-head);
+      font-size: 1.1rem;
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform 0.1s;
+    }
+    .new-game-btn:active { transform: scale(0.97); }
+
+    /* ─── MODAL ─── */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      display: flex;
+      align-items: flex-end;
+      z-index: 200;
+      animation: fadeIn 0.15s ease;
+    }
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px 20px 0 0;
+      padding: 24px 20px 36px;
+      width: 100%;
+      animation: slideUp 0.2s cubic-bezier(.34,1.56,.64,1);
+    }
+    @keyframes slideUp { from { transform: translateY(60px); } to { transform: none; } }
+    .modal-title { font-size: 1.2rem; font-weight: 800; margin-bottom: 8px; }
+    .modal-sub { color: var(--muted); font-size: 0.9rem; margin-bottom: 24px; }
+    .modal-btns { display: flex; gap: 10px; }
+    .modal-cancel {
+      flex: 1; padding: 14px;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); color: var(--text);
+      font-family: var(--font-head); font-size: 1rem; cursor: pointer;
+    }
+    .modal-confirm {
+      flex: 1; padding: 14px;
+      background: var(--accent2); border: none;
+      border-radius: var(--radius); color: #fff;
+      font-family: var(--font-head); font-size: 1rem; font-weight: 700; cursor: pointer;
+    }
+
+    /* ─── HISTORY VIEW ─── */
+    .history-view-title { font-size: 1.6rem; font-weight: 800; margin-bottom: 20px; }
+    .history-full-list { display: flex; flex-direction: column; gap: 8px; }
+    .history-full-item {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      border: 1px solid var(--border);
+    }
+    .hfi-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+    .hfi-round { font-family: var(--font-mono); font-size: 0.75rem; color: var(--muted); }
+    .hfi-entries { display: flex; flex-direction: column; gap: 3px; }
+    .hfi-entry {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.88rem;
+    }
+    .hfi-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .hfi-pts { font-family: var(--font-mono); color: var(--green); margin-left: auto; }
+
+    .empty-state {
+      text-align: center;
+      color: var(--muted);
+      padding: 40px 20px;
+      font-size: 0.95rem;
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+  <!-- HEADER -->
+  <header>
+    <div class="logo">Qwirk<span>le</span></div>
+    <div class="header-btns">
+      <button class="icon-btn" @click="toggleHistory" v-if="view === 'game'" title="Verlauf">📋</button>
+      <button class="icon-btn" @click="showEndConfirm = true" v-if="view === 'game'" title="Spiel beenden">🏁</button>
+    </div>
+  </header>
+
+  <!-- SETUP VIEW -->
+  <div class="view" v-if="view === 'setup'">
+    <div class="setup-title">Neues Spiel</div>
+    <div class="setup-sub">Spieler hinzufügen und loslegen</div>
+
+    <div class="player-list">
+      <div class="player-row" v-for="(player, i) in players" :key="player.id">
+        <div class="player-color" :style="{ background: player.color }"></div>
+        <input
+          class="player-input"
+          v-model="player.name"
+          :placeholder="`Spieler ${i + 1}`"
+          maxlength="20"
+          @keyup.enter="addPlayer"
+        />
+        <button class="remove-btn" @click="removePlayer(i)" v-if="players.length > 2">✕</button>
+      </div>
+    </div>
+
+    <button class="add-player-btn" @click="addPlayer">+ Spieler hinzufügen</button>
+
+    <button class="start-btn" @click="startGame" :disabled="!canStart">
+      Spiel starten →
+    </button>
+  </div>
+
+  <!-- GAME VIEW -->
+  <div class="view" v-if="view === 'game'">
+    <div class="round-badge">Runde <b>{{ round }}</b></div>
+
+    <div class="players-grid">
+      <div
+        class="player-card"
+        :class="{ active: selectedPlayer === i, leader: isLeader(i) }"
+        v-for="(player, i) in players"
+        :key="player.id"
+        @click="selectPlayer(i)"
+      >
+        <div class="player-dot" :style="{ background: player.color }"></div>
+        <div class="player-info">
+          <div class="player-name-game">{{ player.name }}</div>
+          <div class="player-delta" v-if="player.lastDelta">+{{ player.lastDelta }} in Runde {{ round - 1 }}</div>
+        </div>
+        <div class="player-score">{{ player.score }}</div>
+      </div>
+    </div>
+
+    <!-- SCORE PANEL -->
+    <div class="score-panel" v-if="selectedPlayer !== null">
+      <div class="panel-title">Punkte für <b>{{ players[selectedPlayer].name }}</b></div>
+      <div class="score-input-row">
+        <input
+          class="score-input"
+          type="number"
+          min="0"
+          v-model.number="scoreInput"
+          placeholder="0"
+          ref="scoreField"
+        />
+        <button class="confirm-btn" @click="addScore" :disabled="!scoreInput || scoreInput <= 0">
+          ✓ OK
+        </button>
+      </div>
+      <div class="quick-btns">
+        <button class="quick-btn" v-for="v in quickValues" :key="v" @click="scoreInput = v">+{{ v }}</button>
+        <button class="quick-btn qwirkle" @click="scoreInput = 12">🌟 Qwirkle (+12)</button>
+      </div>
+    </div>
+
+    <div class="bottom-row">
+      <button class="undo-btn" @click="undoLast" :disabled="history.length === 0">
+        ↩ Rückgängig
+      </button>
+      <button class="end-btn" @click="showEndConfirm = true">🏁 Beenden</button>
+    </div>
+
+    <!-- MINI HISTORY -->
+    <div class="history-section" v-if="!showHistoryView && history.length > 0">
+      <div class="history-title">Letzte Züge</div>
+      <div class="history-list">
+        <div
+          class="history-item"
+          v-for="(h, i) in recentHistory"
+          :key="i"
+          :style="{ borderLeftColor: h.color }"
+        >
+          <span>{{ h.name }}</span>
+          <span class="history-item-round">Rd {{ h.round }}</span>
+          <span class="history-item-score">+{{ h.points }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HISTORY FULLSCREEN -->
+  <div class="view" v-if="view === 'history'">
+    <div class="history-view-title">📋 Spielverlauf</div>
+    <div class="history-full-list" v-if="groupedHistory.length > 0">
+      <div class="history-full-item" v-for="(group, i) in groupedHistory" :key="i">
+        <div class="hfi-header">
+          <span class="hfi-round">Runde {{ group.round }}</span>
+        </div>
+        <div class="hfi-entries">
+          <div class="hfi-entry" v-for="e in group.entries" :key="e.playerId">
+            <div class="hfi-dot" :style="{ background: e.color }"></div>
+            <span>{{ e.name }}</span>
+            <span class="hfi-pts">+{{ e.points }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="empty-state" v-else>Noch keine Züge gespielt.</div>
+    <div class="bottom-row" style="margin-top: 24px;">
+      <button class="undo-btn" @click="view = 'game'">← Zurück zum Spiel</button>
+    </div>
+  </div>
+
+  <!-- RESULT VIEW -->
+  <div class="result-view view" v-if="view === 'result'">
+    <div class="trophy">🏆</div>
+    <div class="winner-name">{{ winner.name }}</div>
+    <div class="winner-sub">gewinnt mit {{ winner.score }} Punkten!</div>
+
+    <div class="final-scores">
+      <div
+        class="final-row"
+        :class="{ first: i === 0 }"
+        v-for="(p, i) in sortedPlayers"
+        :key="p.id"
+      >
+        <div class="final-left">
+          <span class="final-rank">#{{ i + 1 }}</span>
+          <div class="player-dot" :style="{ background: p.color }"></div>
+          {{ p.name }}
+        </div>
+        <div class="final-score">{{ p.score }}</div>
+      </div>
+    </div>
+
+    <button class="new-game-btn" @click="newGame">🎮 Neues Spiel</button>
+  </div>
+
+  <!-- END CONFIRM MODAL -->
+  <div class="modal-backdrop" v-if="showEndConfirm" @click.self="showEndConfirm = false">
+    <div class="modal">
+      <div class="modal-title">Spiel beenden?</div>
+      <div class="modal-sub">Der aktuelle Spielstand wird als Ergebnis angezeigt.</div>
+      <div class="modal-btns">
+        <button class="modal-cancel" @click="showEndConfirm = false">Weiter spielen</button>
+        <button class="modal-confirm" @click="endGame">Beenden</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+<script>
+const COLORS = [
+  '#f7b731','#ee5a24','#00b894','#0984e3',
+  '#a29bfe','#fd79a8','#55efc4','#fdcb6e',
+  '#e17055','#74b9ff'
+];
+
+const STORAGE_KEY = 'qwirkle_game_state';
+
+const { createApp, ref, computed, watch, nextTick } = Vue;
+
+createApp({
+  setup() {
+    const view = ref('setup');
+    const players = ref([
+      { id: 1, name: '', score: 0, color: COLORS[0], lastDelta: 0 },
+      { id: 2, name: '', score: 0, color: COLORS[1], lastDelta: 0 },
+    ]);
+    const round = ref(1);
+    const history = ref([]);        // { playerId, name, color, points, round }
+    const selectedPlayer = ref(null);
+    const scoreInput = ref('');
+    const showEndConfirm = ref(false);
+    const scoreField = ref(null);
+    let nextId = 3;
+
+    const quickValues = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+
+    // ── Persistence ──
+    function saveState() {
+      const state = {
+        view: view.value,
+        players: players.value,
+        round: round.value,
+        history: history.value,
+        nextId,
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return;
+        const s = JSON.parse(raw);
+        if (s.view && s.players) {
+          view.value = s.view;
+          players.value = s.players;
+          round.value = s.round || 1;
+          history.value = s.history || [];
+          nextId = s.nextId || players.value.length + 1;
+        }
+      } catch(e) { /* ignore */ }
+    }
+
+    loadState();
+
+    watch([view, players, round, history], saveState, { deep: true });
+
+    // ── Setup ──
+    const canStart = computed(() =>
+      players.value.length >= 2 &&
+      players.value.every(p => p.name.trim().length > 0)
+    );
+
+    function addPlayer() {
+      if (players.value.length >= 10) return;
+      players.value.push({
+        id: nextId++,
+        name: '',
+        score: 0,
+        color: COLORS[players.value.length % COLORS.length],
+        lastDelta: 0,
+      });
+    }
+
+    function removePlayer(i) {
+      if (players.value.length <= 2) return;
+      players.value.splice(i, 1);
+    }
+
+    function startGame() {
+      players.value.forEach(p => { p.score = 0; p.lastDelta = 0; });
+      round.value = 1;
+      history.value = [];
+      selectedPlayer.value = null;
+      scoreInput.value = '';
+      view.value = 'game';
+    }
+
+    // ── Game ──
+    function selectPlayer(i) {
+      selectedPlayer.value = i;
+      scoreInput.value = '';
+      nextTick(() => scoreField.value?.focus());
+    }
+
+    function addScore() {
+      const pts = parseInt(scoreInput.value);
+      if (!pts || pts <= 0 || selectedPlayer.value === null) return;
+      const p = players.value[selectedPlayer.value];
+      p.score += pts;
+      p.lastDelta = pts;
+      history.value.unshift({
+        playerId: p.id,
+        name: p.name,
+        color: p.color,
+        points: pts,
+        round: round.value,
+      });
+      scoreInput.value = '';
+      // advance round when all players had a turn in this round
+      const playsThisRound = history.value.filter(h => h.round === round.value);
+      const uniquePlayers = new Set(playsThisRound.map(h => h.playerId));
+      if (uniquePlayers.size >= players.value.length) {
+        round.value++;
+        players.value.forEach(pl => { pl.lastDelta = 0; });
+      }
+      selectedPlayer.value = null;
+    }
+
+    function undoLast() {
+      if (history.value.length === 0) return;
+      const last = history.value.shift();
+      const p = players.value.find(p => p.id === last.playerId);
+      if (p) {
+        p.score -= last.points;
+        p.lastDelta = 0;
+      }
+      if (last.round < round.value) {
+        round.value = last.round;
+      }
+    }
+
+    function endGame() {
+      showEndConfirm.value = false;
+      view.value = 'result';
+    }
+
+    function newGame() {
+      players.value.forEach(p => { p.score = 0; p.lastDelta = 0; });
+      round.value = 1;
+      history.value = [];
+      selectedPlayer.value = null;
+      scoreInput.value = '';
+      view.value = 'setup';
+    }
+
+    // ── History view ──
+    function toggleHistory() {
+      view.value = view.value === 'history' ? 'game' : 'history';
+    }
+
+    // ── Computed ──
+    const recentHistory = computed(() => history.value.slice(0, 5));
+
+    const groupedHistory = computed(() => {
+      const rounds = {};
+      history.value.forEach(h => {
+        if (!rounds[h.round]) rounds[h.round] = { round: h.round, entries: [] };
+        rounds[h.round].entries.push(h);
+      });
+      return Object.values(rounds).sort((a, b) => b.round - a.round);
+    });
+
+    const sortedPlayers = computed(() =>
+      [...players.value].sort((a, b) => b.score - a.score)
+    );
+
+    const winner = computed(() => sortedPlayers.value[0] || {});
+
+    function isLeader(i) {
+      const maxScore = Math.max(...players.value.map(p => p.score));
+      return players.value[i].score === maxScore && maxScore > 0;
+    }
+
+    return {
+      view, players, round, history, selectedPlayer,
+      scoreInput, showEndConfirm, scoreField,
+      quickValues, canStart,
+      addPlayer, removePlayer, startGame,
+      selectPlayer, addScore, undoLast, endGame, newGame,
+      toggleHistory, recentHistory, groupedHistory,
+      sortedPlayers, winner, isLeader,
+    };
+  }
+}).mount('#app');
+</script>
+</body>
+</html>
