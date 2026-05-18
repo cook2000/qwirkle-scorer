@@ -253,11 +253,11 @@
 
     .score-input-row {
       display: flex;
-      gap: 10px;
-      align-items: center;
+      flex-direction: column;
+      gap: 8px;
     }
     .score-input {
-      flex: 1;
+      width: 100%;
       background: var(--bg);
       border: 2px solid var(--border);
       border-radius: 10px;
@@ -306,12 +306,12 @@
       border-radius: 10px;
       color: #0f0f1a;
       font-family: var(--font-head);
-      font-size: 1rem;
+      font-size: 1.1rem;
       font-weight: 800;
-      padding: 12px 18px;
+      padding: 14px;
+      width: 100%;
       cursor: pointer;
       transition: transform 0.1s;
-      white-space: nowrap;
     }
     .confirm-btn:active { transform: scale(0.93); }
     .confirm-btn:disabled { opacity: 0.3; cursor: not-allowed; }
@@ -569,6 +569,8 @@
         <input
           class="score-input"
           type="number"
+          inputmode="numeric"
+          pattern="[0-9]*"
           min="0"
           v-model.number="scoreInput"
           placeholder="0"
@@ -801,7 +803,6 @@ createApp({
     function selectPlayer(i) {
       selectedPlayer.value = i;
       scoreInput.value = 0;
-      nextTick(() => scoreField.value?.focus());
     }
 
     function addScore() {
@@ -829,7 +830,6 @@ createApp({
       const nextIndex = (selectedPlayer.value + 1) % players.value.length;
       selectedPlayer.value = nextIndex;
       scoreInput.value = 0;
-      nextTick(() => scoreField.value?.focus());
     }
 
     function undoLast() {
