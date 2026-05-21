@@ -937,6 +937,15 @@ createApp({
     };
   }
 }).mount('#app');
+
+// Service Worker registrieren
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then(() => console.log('Service Worker aktiv'))
+      .catch(err => console.warn('Service Worker Fehler:', err));
+  });
+}
 </script>
 </body>
 </html>
