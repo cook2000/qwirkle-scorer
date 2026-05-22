@@ -589,12 +589,12 @@
           placeholder="0"
           ref="scoreField"
         />
-        <button class="confirm-btn" @click="addScore" :disabled="selectedPlayer === null || scoreInput === '' || scoreInput === null">
+        <button class="confirm-btn" @click="addScore" :disabled="selectedPlayer === null">
           ✓ OK
         </button>
       </div>
       <div class="quick-btns">
-        <button class="quick-btn" v-for="v in quickValues" :key="v" @click="v === 0 ? scoreInput = 0 : scoreInput = (scoreInput || 0) + v">{{ v === 0 ? 'Passen' : '+' + v }}</button>
+        <button class="quick-btn" v-for="v in quickValues" :key="v" @click="scoreInput = (scoreInput || 0) + v">+{{ v }}</button>
         <button class="quick-btn qwirkle" @click="scoreInput = (scoreInput || 0) + 12">🌟 Qwirkle (+12)</button>
       </div>
     </div>
@@ -746,7 +746,7 @@ createApp({
     let nextId = 3;
     let nextHistoryId = 1;
 
-    const quickValues = [0, 1, 2, 3, 5, 6];
+    const quickValues = [1, 2, 3, 5, 6];
 
     // ── Persistence ──
     function saveState() {
