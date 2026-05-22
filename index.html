@@ -6,6 +6,9 @@
   <meta name="theme-color" content="#1a1a2e" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <title>Qwirkle Scorer</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -586,12 +589,12 @@
           placeholder="0"
           ref="scoreField"
         />
-        <button class="confirm-btn" @click="addScore" :disabled="!scoreInput || scoreInput <= 0">
+        <button class="confirm-btn" @click="addScore" :disabled="selectedPlayer === null || scoreInput === '' || scoreInput === null">
           ✓ OK
         </button>
       </div>
       <div class="quick-btns">
-        <button class="quick-btn" v-for="v in quickValues" :key="v" @click="scoreInput = (scoreInput || 0) + v">+{{ v }}</button>
+        <button class="quick-btn" v-for="v in quickValues" :key="v" @click="v === 0 ? scoreInput = 0 : scoreInput = (scoreInput || 0) + v">{{ v === 0 ? 'Passen' : '+' + v }}</button>
         <button class="quick-btn qwirkle" @click="scoreInput = (scoreInput || 0) + 12">🌟 Qwirkle (+12)</button>
       </div>
     </div>
@@ -743,7 +746,7 @@ createApp({
     let nextId = 3;
     let nextHistoryId = 1;
 
-    const quickValues = [1, 2, 3, 5, 6];
+    const quickValues = [0, 1, 2, 3, 5, 6];
 
     // ── Persistence ──
     function saveState() {
@@ -817,7 +820,7 @@ createApp({
 
     function addScore() {
       const pts = parseInt(scoreInput.value);
-      if (!pts || pts <= 0 || selectedPlayer.value === null) return;
+      if (isNaN(pts) || pts < 0 || selectedPlayer.value === null) return;
       const p = players.value[selectedPlayer.value];
       p.score += pts;
       p.lastDelta = pts;
